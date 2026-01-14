@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # Failure Scenarios & System Behavior
 
 ## Ingestion Service Down
@@ -72,4 +72,4 @@
 - Timeouts trigger retries
 - Circuit breakers open
 - System degrades gracefully
->>>>>>> 3be0419c442601b47f2afaa0a072aa716821a942
+
