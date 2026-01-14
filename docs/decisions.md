@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # Design Decisions
 
 ## Why Golang for Backend?
@@ -72,4 +72,4 @@ We choose schema-on-write for:
 - predictable structure
 
 
->>>>>>> 3be0419c442601b47f2afaa0a072aa716821a942
+
