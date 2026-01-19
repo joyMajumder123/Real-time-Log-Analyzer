@@ -27,7 +27,6 @@ func (h *Handler) Ingest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// minimal validation
 	if logEntry.Service == "" || logEntry.Level == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -38,7 +37,7 @@ func (h *Handler) Ingest(w http.ResponseWriter, r *http.Request) {
 	case h.LogQueue <- logEntry:
 		w.WriteHeader(http.StatusAccepted)
 	default:
-		// queue full
+
 		w.WriteHeader(http.StatusTooManyRequests)
 	}
 }
