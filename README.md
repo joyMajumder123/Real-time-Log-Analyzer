@@ -1,148 +1,131 @@
-# Architecture Overview – Real-Time Web Log Analyzer (13Jan,2026)
 
-## 1. Problem Statement
 
-Modern web systems generate massive volumes of logs across multiple services. These logs are critical for:
-- debugging issues,
-- monitoring performance,
-- detecting failures,
-- understanding user behavior.
 
-Traditional log systems process logs in batch mode, causing delays in visibility.  
-We aim to build a **real-time log analyzer** that can ingest, process, aggregate, and visualize logs with **low latency, high reliability, and scalability**.
+# 🚀 Real-Time Web Log Analyzer
 
----
+A high-performance, low-latency log ingestion and analytics pipeline designed to process massive volumes of web logs with **<2s end-to-end latency**.
 
-## 2. Goals
+## 📌 Overview
 
-- Ingest logs in near real-time from multiple services
-- Process and aggregate logs within **<2 seconds end-to-end latency**
-- Support **horizontal scalability**
-- Handle **traffic spikes gracefully**
-- Ensure **fault tolerance**
-- Provide **real-time metrics + historical analytics**
-- Maintain **clean separation of concerns**
+Modern distributed systems generate logs faster than traditional batch-processing systems can handle. This project provides a scalable architecture to ingest, normalize, and visualize logs in real-time, allowing teams to debug issues and monitor performance as it happens.
+
+### Key Highlights
+
+* **Low Latency:** Logs are visible on the dashboard in near real-time.
+* **Highly Scalable:** Horizontal scaling across Ingestion, Processing, and API layers.
+* **Resilient:** Built-in backpressure handling and failure isolation.
+* **Hybrid Storage:** Redis for high-speed "hot" metrics; PostgreSQL for durable "cold" historical data.
 
 ---
 
-## 3. Non-Goals
+## 🏗️ Architecture
 
-- Petabyte-scale log storage
-- Full-text search engine (e.g., Elasticsearch replacement)
-- ML-based anomaly detection (future scope)
-- Distributed tracing system (future scope)
+The system follows a decoupled, asynchronous flow to ensure that ingestion is never blocked by downstream processing.
 
----
+### 1. Ingestion Layer (Go)
 
-## 4. High-Level Architecture
+* Receives structured logs via **gRPC/HTTP**.
+* Performs schema validation and normalization.
+* Offloads data to an internal message queue immediately to maintain high throughput.
 
-The system consists of the following components:
+### 2. Stream Processing (Worker Pool)
 
-1. **Log Shipper / Agent**
-   - Reads logs from application files or stdout
-   - Sends structured logs to the ingestion service
+* Decoupled workers consume from the queue.
+* Implements sliding window aggregations (e.g., 1-minute error rates).
+* Updates real-time counters.
 
-2. **Ingestion Service (Go)**
-   - Receives logs via HTTP/gRPC
-   - Validates and normalizes logs
-   - Pushes logs into internal queue/buffer
+### 3. Dual-Storage Strategy
 
-3. **Stream Processing Layer**
-   - Worker pool consuming from queue
-   - Parses logs
-   - Performs aggregation and windowing
-   - Updates real-time counters
+* **Redis:** Powers the "Hot Path." Stores real-time counters and rolling metrics for instant dashboard updates.
+* **PostgreSQL:** Powers the "Cold Path." Stores aggregated metrics and raw logs for historical analysis and trend reporting.
 
-4. **Storage Layer**
-   - **Redis**: real-time counters, sliding windows
-   - **PostgreSQL**: durable aggregated metrics + historical data
+### 4. Presentation Layer
 
-5. **API Layer (Go)**
-   - Exposes endpoints for metrics, logs, and analytics
-
-6. **Frontend Dashboard (Next.js + TS)**
-   - Displays real-time charts
-   - Allows filtering and inspection
+* **API (Go):** High-concurrency endpoints for querying metrics.
+* **Dashboard (Next.js + TS):** Real-time data visualization using WebSockets/Polling and optimized charting libraries.
 
 ---
 
-## 5. System Diagram (Logical)
+## 🛠️ Tech Stack
 
-Log Source  
-   ↓  
-Log Shipper  
-   ↓  
-Ingestion API  
-   ↓  
-Internal Queue  
-   ↓  
-Worker Pool  
-   ↓  
-Redis / Postgres  
-   ↓  
-API Layer  
-   ↓  
-Next.js Dashboard
+| Component | Technology |
+| --- | --- |
+| **Backend** | Go (Golang) |
+| **Frontend** | Next.js, TypeScript, Tailwind CSS |
+| **Real-time Store** | Redis |
+| **Durable Store** | PostgreSQL |
+| **Communication** | gRPC / REST |
+| **Infrastructure** | Docker, Kubernetes (Scalable replicas) |
 
 ---
 
-## 6. Key Architectural Principles
+## 🚀 Getting Started
 
-### a. Asynchronous Processing
-Ingestion must never block on processing or storage.
+### Prerequisites
 
-### b. Backpressure Awareness
-The system must protect itself during spikes.
+* Go 1.21+
+* Node.js 18+
+* Docker & Docker Compose
 
-### c. Separation of Hot and Cold Paths
-Real-time metrics (hot path) must not be impacted by heavy queries (cold path).
+### Setup & Installation
 
-### d. Failure Isolation
-Failure in one component must not cascade across the system.
+1. **Clone the repository**
+```bash
+git clone https://github.com/joyMajumder123/Real-time-Log-Analyzer
+cd log-analyzer
 
-### e. Observability First
-The system must expose metrics about itself.
+```
 
----
 
-## 7. Data Ownership & Flow Responsibility
+2. **Start Infrastructure (Redis & Postgres)**
+```bash
+docker-compose up -d
 
-- Log shipper owns delivery guarantee
-- Ingestion service owns validation
-- Processor owns aggregation correctness
-- Storage owns durability
-- API owns query performance
-- Frontend owns visualization
+```
 
-Each layer has **single responsibility**.
 
----
+3. **Run the Ingestion Service**
+```bash
+cd services/ingestion
+go run main.go
 
-## 8. Scaling Model
+```
 
-- Ingestion service scales horizontally
-- Worker pool scales via replicas
-- Redis scales via clustering
-- Postgres scales via read replicas / partitioning
-- Frontend scales via CDN
 
----
+4. **Launch the Dashboard**
+```bash
+cd frontend
+npm install
+npm run dev
 
-## 9. Security Considerations
+```
 
-- Authentication for ingestion endpoints
-- Tenant isolation at data layer
-- Rate limiting on API layer
-- Input validation at ingestion
+
 
 ---
 
-## 10. Summary
+## 📈 Scaling & Resilience
 
-This architecture prioritizes:
-- correctness,
-- performance,
-- resilience,
-- and clarity.
+* **Horizontal Scaling:** Each service is stateless. Use Kubernetes HPA to scale workers based on queue depth.
+* **Backpressure:** The Ingestion API implements rate-limiting and buffer management to prevent cascading failures during traffic spikes.
+* **Fault Tolerance:** If a worker fails, the internal queue ensures no data loss; another worker will pick up the task.
 
-It is designed to evolve as scale and requirements grow.
+---
+
+## 🛡️ Security
+
+* **Auth:** JWT-based authentication for API and Ingestion endpoints.
+* **Validation:** Strict input sanitization to prevent injection attacks via log payloads.
+* **Isolation:** Multi-tenant data isolation at the storage level.
+
+---
+
+## 🗺️ Roadmap
+
+* [ ] ML-based anomaly detection.
+* [ ] Full-text search integration.
+* [ ] Exporting metrics to Prometheus/Grafana.
+* [ ] Distributed tracing support.
+
+---
+
