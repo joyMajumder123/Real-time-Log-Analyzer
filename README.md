@@ -120,12 +120,8 @@ npm run dev
 
 ---
 
-## 🗺️ Roadmap
+## Support
 
-* [ ] ML-based anomaly detection.
-* [ ] Full-text search integration.
-* [ ] Exporting metrics to Prometheus/Grafana.
-* [ ] Distributed tracing support.
-
+For issues or questions, please create an issue in the GitHub repository.
 ---
 
