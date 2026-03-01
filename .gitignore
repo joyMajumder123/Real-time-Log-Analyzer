@@ -1,1 +1,52 @@
+# IDE
 .vscode/
+.idea/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.env
+
+# Build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go
+/vendor/
+go.work
+
+# Node.js
+node_modules/
+.next/
+out/
+dist/
+.turbo/
+*.tsbuildinfo
+
+# Logs
+*.log
+logs/
+backend/logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+
+backend/pkg/config/config.go
+**/config.go
+
+# Internal team documentation (not for public)
+DELIVERY_SUMMARY.md
+TEAM_ASSESSMENT.md
+FRONTEND_MANIFEST.md
+FRONTEND_QUICK_START.md
+INDEX.md
+
+# Test files
+*.test.exe
+test_client.exe

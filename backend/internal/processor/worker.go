@@ -3,26 +3,33 @@ package processor
 import (
 	"log"
 
-	"real-time-log-analyzer/internal/models"
+	"real-time-log-analyzer/backend/internal/models"
+	"real-time-log-analyzer/backend/internal/storage"
 )
 
-func StartWorkerPool(workerCount int, queue <-chan models.LogEntry) {
+func StartWorkerPool(workerCount int, queue <-chan models.LogEntry, store storage.Store) {
 	for i := 0; i < workerCount; i++ {
-		go worker(i, queue)
+		go worker(i, queue, store)
 	}
+	log.Printf("[PROCESSOR] Started %d workers\n", workerCount)
 }
 
-func worker(id int, queue <-chan models.LogEntry) {
-	log.Printf("Worker %d started\n", id)
+func worker(id int, queue <-chan models.LogEntry, store storage.Store) {
+	log.Printf("[WORKER %d] Started\n", id)
 	for logEntry := range queue {
-		process(logEntry)
+		process(logEntry, store)
 	}
+	log.Printf("[WORKER %d] Stopped\n", id)
 }
 
-func process(logEntry models.LogEntry) {
-	// placeholder for aggregation / storage
+func process(logEntry models.LogEntry, store storage.Store) {
+	if err := store.AddLog(logEntry); err != nil {
+		log.Printf("[PROCESSOR] Error storing log: %v\n", err)
+		return
+	}
+
 	log.Printf(
-		"[LOG] service=%s level=%s endpoint=%s status=%d latency=%dms",
+		"[PROCESSOR] Processed: service=%s level=%s endpoint=%s status=%d latency=%dms",
 		logEntry.Service,
 		logEntry.Level,
 		logEntry.Endpoint,
