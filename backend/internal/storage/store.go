@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -76,7 +77,7 @@ func (s *InMemoryStore) AddLog(entry models.LogEntry) error {
 	metrics := s.metrics[entry.Service]
 	metrics.TotalLogs++
 	metrics.AvgLatency = (metrics.AvgLatency*(float64(metrics.TotalLogs)-1) + float64(entry.LatencyMs)) / float64(metrics.TotalLogs)
-	metrics.StatusCodes[string(rune(entry.Status/100))]++
+	metrics.StatusCodes[fmt.Sprintf("%dxx", entry.Status/100)]++
 	metrics.TopEndpoints[entry.Endpoint]++
 	if entry.Level == "error" || entry.Level == "ERROR" {
 		metrics.ErrorCount++
@@ -123,7 +124,7 @@ func (s *InMemoryStore) GetMetrics(service string) (*ServiceMetrics, error) {
 	defer s.mu.RUnlock()
 
 	if metrics, ok := s.metrics[service]; ok {
-		return metrics, nil
+		return copyServiceMetrics(metrics), nil
 	}
 
 	return &ServiceMetrics{
@@ -139,7 +140,7 @@ func (s *InMemoryStore) GetAllMetrics() map[string]*ServiceMetrics {
 
 	result := make(map[string]*ServiceMetrics)
 	for k, v := range s.metrics {
-		result[k] = v
+		result[k] = copyServiceMetrics(v)
 	}
 	return result
 }
@@ -154,7 +155,7 @@ func (s *InMemoryStore) GetRealTimeMetrics() *RealTimeMetrics {
 	totalLatency := float64(0)
 
 	for k, v := range s.metrics {
-		services[k] = v
+		services[k] = copyServiceMetrics(v)
 		totalReqs += v.TotalLogs
 		totalErrors += v.ErrorCount
 		totalLatency += v.AvgLatency * float64(v.TotalLogs)
@@ -188,6 +189,26 @@ func (s *InMemoryStore) GetServices() []string {
 		services = append(services, service)
 	}
 	return services
+}
+
+func copyServiceMetrics(src *ServiceMetrics) *ServiceMetrics {
+	copy := &ServiceMetrics{
+		Service:        src.Service,
+		TotalLogs:      src.TotalLogs,
+		ErrorCount:     src.ErrorCount,
+		AvgLatency:     src.AvgLatency,
+		RequestsPerSec: src.RequestsPerSec,
+		LastUpdated:    src.LastUpdated,
+		StatusCodes:    make(map[string]int64, len(src.StatusCodes)),
+		TopEndpoints:   make(map[string]int64, len(src.TopEndpoints)),
+	}
+	for k, v := range src.StatusCodes {
+		copy.StatusCodes[k] = v
+	}
+	for k, v := range src.TopEndpoints {
+		copy.TopEndpoints[k] = v
+	}
+	return copy
 }
 
 func (s *InMemoryStore) Close() error {
