@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
+
+	"github.com/google/uuid"
 
 	"real-time-log-analyzer/backend/internal/models"
 )
@@ -42,6 +45,13 @@ func (h *Handler) Ingest(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		log.Println("[INGEST] Missing required fields")
 		return
+	}
+
+	if logEntry.ID == "" {
+		logEntry.ID = uuid.New().String()
+	}
+	if logEntry.Timestamp == "" {
+		logEntry.Timestamp = time.Now().Format(time.RFC3339)
 	}
 
 	log.Printf("[INGEST] Received log: service=%s level=%s endpoint=%s\n", logEntry.Service, logEntry.Level, logEntry.Endpoint)
